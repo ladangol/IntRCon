@@ -6,7 +6,10 @@ public class tFD {
 	public tFD(String[] lhsStr, String[] rhsStr){
 		lhs = new int[lhsStr.length];
 		rhs = new int[rhsStr.length];
-		for(int i = 0; i< lhsStr.length; i++){
+		if(lhsStr[0].trim().isEmpty()){
+			lhs = new int[0];
+		}
+		for(int i = 0; i< lhs.length; i++){
 			lhs[i] = Integer.parseInt(lhsStr[i].trim());
 		}
 		for(int j=0; j< rhsStr.length; j++){
