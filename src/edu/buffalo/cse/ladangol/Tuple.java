@@ -74,6 +74,14 @@ public class Tuple {
 	public int dataAttSize(){
 		return dataatt.length;
 	}
+	public boolean hasEqualDataAttr(Tuple tup){
+		for(int i=0; i<dataAttSize(); i++){
+			if(!dataatt[i].equals(tup.getDataAttr(i))){
+				return false;
+			}
+		}
+		return true;
+	}
 	
 }
   
