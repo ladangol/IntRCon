@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -13,6 +14,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+
+import javax.swing.plaf.metal.OceanTheme;
 
 
 public class Table {
@@ -67,6 +70,7 @@ public class Table {
 	}
 
 	public void coalesce(){
+
 		HashMap<String, ArrayList<Interval<Integer, Integer>>> cotbl = new HashMap<String, ArrayList<Interval<Integer,Integer>>>();
 		//building the hash : tuples with the same data attributes are going to one key
 		for(int i=0; i<table.size(); i++){
@@ -213,50 +217,67 @@ public class Table {
 		}
 		//Finding the sets of facts that have to be normalized together
 		//I give tuples a number so S is an ArrayList<HashSet<Integer>>
-		//mayinc means maybe inconsistent 
-		
+		//Shouldn't I check the value toooo????
+		//I am normalizing any sets of tuples that have the same key!!!
 		ArrayList<HashSet<Integer>> S = new ArrayList<HashSet<Integer>>();
 		Hashtable<String, ArrayList<Integer>> tFDHash = new Hashtable<String, ArrayList<Integer>>();ArrayList<Hashtable<String, ArrayList<Integer>>> mayinc = new ArrayList<Hashtable<String, ArrayList<Integer>>>();
-		for(int i= 0; i<lhstFDs.size(); i++){
-			
+		Hashtable<String, HashSet<String>> tFDkeyVals =new Hashtable<String, HashSet<String>>();
+		for(int i= 0; i<lhstFDs.size(); i++){			
 			int[] tFD = lhstFDs.get(i);
+			int[] rhs = tFDs.get(i).getrhs();
 			for(int j=0; j< table.size(); j++){
 				StringBuilder key = new StringBuilder();
 				Tuple tup = table.get(j);
 				for(int k=0; k<tFD.length; k++){
 					key.append(tup.getDataAttr(tFD[k]-1));
 				}
+				//key.append(tup.getStartPoint());
+				//key.append(tup.getEndPoint());
 				String keyStr = key.toString();
+				StringBuilder value = new StringBuilder();
+				for(int k=0; k<rhs.length; k++){
+					value.append(tup.getDataAttr(rhs[k]-1));
+				}
+				String valuestr = value.toString();
 				if(tFDHash.containsKey(keyStr)){
 					ArrayList<Integer> temp = tFDHash.get(keyStr);
 					temp.add(j); //J is tuple number
 					tFDHash.put(keyStr, temp);
+					HashSet<String> temphs = tFDkeyVals.get(keyStr);
+					temphs.add(valuestr);
+					tFDkeyVals.put(keyStr, temphs);
 				}
-				else
-				{
+				else{
 					ArrayList<Integer> temp = new ArrayList<>();
 					temp.add(j);
 					tFDHash.put(keyStr, temp);
+					HashSet<String> temphs = new HashSet<String>();
+					temphs.add(valuestr);
+					tFDkeyVals.put(keyStr, temphs);
+					
 				}
 			}
-	
-				
+			
+		}
+		Enumeration<String> iterdeltakeys = tFDHash.keys();
+		while(iterdeltakeys.hasMoreElements()){
+			String key = iterdeltakeys.nextElement();
+			if(tFDkeyVals.get(key).size() == 1){
+				tFDHash.remove(key);
+				iterdeltakeys = tFDHash.keys();
 			}
+		}
 		
-		//for(int i=0; i<mayinc.size(); i++){
-			//Hashtable<String, ArrayList<Integer>> tFDHash = mayinc.get(i);
-			//tFDHash.values() is of type collection
 			Collection<ArrayList<Integer>> sets = tFDHash.values();
 			Iterator<ArrayList<Integer>> iter = sets.iterator();
 			HashSet<Integer> hs = new HashSet<Integer>();
+			HashSet<Integer> conflictupnums = new HashSet<Integer>();
 			while(iter.hasNext()){		
 				//This just copy the references not the actual values to S
 				//When I clear hs then the values in S are being copied too
-/*				hs.addAll(iter.next());
-				S.add(hs);  
-				hs.clear();*/
 				hs.addAll(iter.next());
 				S.add((HashSet<Integer>) hs.clone());
+				conflictupnums.addAll(hs);
 				hs.clear();
 			}
 			
@@ -283,6 +304,13 @@ public class Table {
 			index++;
 		}
 		Table normalizedtbl = new Table();
+		
+		for(int t=0; t< table.size(); t++){
+			if(!conflictupnums.contains(t)){
+				normalizedtbl.add(table.get(t));
+			}
+		}
+		
 		TreeSet<Integer> ts = new TreeSet<Integer>(); //Storing the sorted distinct start poingts and endpoints
 	    for(index =0; index<S.size(); index++){
 	    	HashSet<Integer> delta = S.get(index);
@@ -321,6 +349,7 @@ public class Table {
 		Table repair = new Table();
 		//Building a set that contains all the subset of the facts that are in conflict.
 		ArrayList<HashSet<Integer>> conflictsets = new ArrayList<HashSet<Integer>>();
+		//ArrayList<HashSet<Integer>> conflictsetsTemp = new ArrayList<HashSet<Integer>>();
 		//I am assuming my original instance is already factorized
 		ArrayList<int[]> lhstFDs = new ArrayList<int[]>(tFDs.size());
 		for(int i=0; i<tFDs.size(); i++){
@@ -331,8 +360,10 @@ public class Table {
 		//In order to build the sets I need to check if two tuples have the same X R(X,Y') \wedge
 		//R(X,Y) --> Y = Y'
 		Hashtable<String, ArrayList<Integer>> deltas = new Hashtable<String, ArrayList<Integer>>();
+		Hashtable<String, HashSet<String>> tFDkeyVals =new Hashtable<String, HashSet<String>>();
 		for(int i= 0; i<lhstFDs.size(); i++){			
 			int[] tFD = lhstFDs.get(i);
+			int[] rhs = tFDs.get(i).getrhs();
 			for(int j=0; j< table.size(); j++){
 				StringBuilder key = new StringBuilder();
 				Tuple tup = table.get(j);
@@ -342,20 +373,52 @@ public class Table {
 				key.append(tup.getStartPoint());
 				key.append(tup.getEndPoint());
 				String keyStr = key.toString();
+				StringBuilder value = new StringBuilder();
+				for(int k=0; k<rhs.length; k++){
+					value.append(tup.getDataAttr(rhs[k]-1));
+				}
+				String valuestr = value.toString();
 				if(deltas.containsKey(keyStr)){
 					ArrayList<Integer> temp = deltas.get(keyStr);
 					temp.add(j); //J is tuple number
 					deltas.put(keyStr, temp);
+					HashSet<String> temphs = tFDkeyVals.get(keyStr);
+					temphs.add(valuestr);
+					tFDkeyVals.put(keyStr, temphs);
 				}
-				else
-				{
+				else{
 					ArrayList<Integer> temp = new ArrayList<>();
 					temp.add(j);
 					deltas.put(keyStr, temp);
+					HashSet<String> temphs = new HashSet<String>();
+					temphs.add(valuestr);
+					tFDkeyVals.put(keyStr, temphs);
+					
 				}
 			}
 			
 		}
+		//So deltas contain sets of size 1
+		//They are not in a conflict set so we remove them
+/*		Iterator<ArrayList<Integer>> iterdelta = deltas.values().iterator();
+		while(iterdelta.hasNext()){
+			ArrayList<Integer> d = iterdelta.next();
+			if(d.size() == 1){
+				deltas.values().remove(d);
+				iterdelta = deltas.values().iterator();
+			}
+		}*/
+		Enumeration<String> iterdeltakeys = deltas.keys();
+		while(iterdeltakeys.hasMoreElements()){
+			String key = iterdeltakeys.nextElement();
+			if(tFDkeyVals.get(key).size() == 1){
+				deltas.remove(key);
+				iterdeltakeys = deltas.keys();
+			}
+		}
+		//There are still sets in delta that are not in conflict
+		//because they have the same value.
+
 		//If there is one tuple for the key (meaning that the ArrayList<Integer> is of size 1
 		//then that is in the repair because it is not conflicting with anything
 		//If Delta is of size >1 then there is a conflict 
@@ -363,17 +426,19 @@ public class Table {
 			//delta.values() is of type collection
 			Collection<ArrayList<Integer>> sets = deltas.values();
 			Iterator<ArrayList<Integer>> iter = sets.iterator();
+			HashSet<Integer> conflictuplenums = new HashSet<Integer>();
 			while(iter.hasNext()){
 				ArrayList<Integer> set = iter.next();
-				if(set.size() == 1){
-					repair.add(table.get(set.get(0)));
-				}
-				else{
+				//if(set.size() == 1){
+					//repair.add(table.get(set.get(0)));
+				//}
+				//else{
 					HashSet<Integer> hs = new HashSet<Integer>(); 
 					hs.addAll((Collection<? extends Integer>) set.clone());
+					conflictuplenums.addAll(hs);
 					conflictsets.add(hs);
 					//hs.clear();
-				}
+				//}
 			}
 			
 		//}
@@ -397,7 +462,13 @@ public class Table {
 			}
 			index++;
 		}
-		
+
+       //I have to add the tuples that are not in a conflict set to repair
+		for(int t=0; t< table.size(); t++){
+			if(!conflictuplenums.contains(t)){
+				repair.add(table.get(t));
+			}
+		}
 		//Now repair starts
 		//for each \delta in the conflictsets we need to 
 		for(int i=0; i<conflictsets.size(); i++){
@@ -437,7 +508,10 @@ public class Table {
 			 
 			  
 		  }
+
+		  
 		  repair.add(tableA);
+ 
 		}
 		repair.switchpoint = switchpoint;
 		return repair;
@@ -450,6 +524,10 @@ public class Table {
 		
 	}
 	private Table factorize2(Table input){
+/*		System.out.println("---------------------------------");
+		for(int i = 0; i<input.Cardinality(); i++){
+			System.out.println(input.getTuple(i).getStringTuple());
+		}*/
 		Table output = new Table();
 		TreeSet<Integer> ts = new TreeSet<Integer>();
 		
@@ -480,6 +558,11 @@ public class Table {
             	}
 			}
 		}
+/*		System.out.println("----------------normalized--------------");
+		for(int i = 0; i<output.Cardinality(); i++){
+			System.out.println(output.getTuple(i).getStringTuple());
+		}*/
+		
 		return output;
 	}
 	public Table findRepair(Table tbl, Tuple tuple, ArrayList<tFD> tFDs){
@@ -496,29 +579,6 @@ public class Table {
        
         //looping through the tuples
         Table repair = new Table();
-/*        try {
-			repair = (Table) tbl.clone();
-		} catch (CloneNotSupportedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-        //Since (new) tuple might be fragmented during
-        //factorization, we are adding all the fragments of tuple to the fragment
-        //System.out.println("Tuple is "+ tuple.getDataAttr(2)+tuple.getDataAttr(3)+tuple.getStartPoint()+tuple.getEndPoint());
-/*        ArrayList<Tuple> fragments = new ArrayList<Tuple>(); 
-      //  ArrayList<Integer> indexes = new ArrayList<Integer>();
-        for(int t=0; t<tbl.Cardinality(); t++){
-        	Tuple tup = tbl.getTuple(t);
-        	if(tup.hasEqualDataAttr(tuple)){
-        		if(tup.getStartPoint() >= tuple.getStartPoint() && tup.getEndPoint() <= tuple.getEndPoint()){
-            		fragments.add(tup);
-            		//indexes.add(t);
-            		//tbl.Remove(t);
-        		}
-
-        	}
-        	//do I need else
-        }*/
         
         
         HashMap<String, String> tFDsKeyVal = null;
@@ -559,49 +619,16 @@ public class Table {
 					}
         		}
         		else{
+        			//System.out.println("key:"+key +" value "+ value );
         			tFDsKeyVal.put(key.toString(), value.toString());
-        		}
-				
-				
+        		}				
         	}
         	if(isCons){
         		repair.add(tup);
         	}
-        	
-
         
         }
-      /*  for(int t=0; t<fragments.size(); t++){
-        	boolean isCons = true;
-        	Tuple fr = fragments.get(t);
-        	for(int d= 0; d<tFDs.size(); d++){
-        		tFD tfd = tFDs.get(d);
-        		int[] lhs = tfd.getlhs();
-        		StringBuilder key = new StringBuilder();
-        		for(int i=0; i< lhs.length; i++){
-        			key.append(fr.getDataAttr(lhs[i]-1).toLowerCase());
-        		}
-        		//Adding the start point and end points
-        		key.append(fr.getStartPoint());
-        		key.append(fr.getEndPoint());
-        		System.out.println("key of fragment is "+ key.toString());
-        		int[] rhs = tfd.getrhs();
-				StringBuilder value = new StringBuilder();
-				for(int i=0; i<rhs.length; i++){
-					value.append(fr.getDataAttr(rhs[i]-1).toLowerCase());
-				}
-        		if(tFDsKeyVal.containsKey(key.toString())){
-        			
-					if(!tFDsKeyVal.get(key.toString()).equals(value)){
-						isCons = false;
-					}
-        		}
-        	}
-        	if(isCons){
-        		repair.add(fr);
-        	}
-        	
-        }*/
+
 		
 		
 		return repair;

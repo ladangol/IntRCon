@@ -12,7 +12,7 @@ public class Solution {
 		Table table = new Table();
 		ArrayList<tFD> tFDs = new ArrayList<>();
 		try {
-			FileReader fr = new FileReader("Data/table2.csv");
+			FileReader fr = new FileReader("Data/table4.csv");
 			BufferedReader bf = new BufferedReader(fr);
 			String line;
 			while((line =bf.readLine())!= null){
@@ -31,7 +31,7 @@ public class Solution {
 		
 		table.reduce();
 		try {
-			FileReader fr = new FileReader("Data/tfd");
+			FileReader fr = new FileReader("Data/tFD2");
 			BufferedReader bf = new BufferedReader(fr);
 			String line;
 			while((line =bf.readLine())!= null){
@@ -54,12 +54,12 @@ public class Solution {
 		System.out.println("Repair:");
 		
 		
-		table.reduce();
+		//table.reduce();
 		table = table.Factorize(tFDs);
 	    //table.PntRCon(tFDs);
-		table = table.IntRCon(tFDs);
-		table.coalesce();
-		table.expand();
+		//table = table.IntRCon(tFDs);
+		//table.coalesce();
+		//table.expand();
 		for(int i = 0; i<table.Cardinality(); i++){
 			System.out.println(table.getTuple(i).getStringTuple());
 		}
