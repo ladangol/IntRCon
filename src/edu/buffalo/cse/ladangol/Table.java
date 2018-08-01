@@ -1,5 +1,8 @@
 package edu.buffalo.cse.ladangol;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -159,6 +162,7 @@ public class Table {
 			for(int currentpoint = tup.getStartPoint(); currentpoint < tup.getEndPoint(); currentpoint++){
 				for(int d = 0; d <tFDs.size(); d++){
 					HashMap<String, String> tfdMap = (HashMap<String, String>) tFDsMaps.get(d);
+				//	HashMap<String, String> tfdMap = new HashMap<String, String>();
 					tFD tfd = tFDs.get(d);
 					int[] lhs = tfd.getlhs();
 					StringBuilder key = new StringBuilder();
@@ -177,7 +181,10 @@ public class Table {
 					if(tfdMap.containsKey(key.toString())){
 						if(!tfdMap.get(key.toString()).equals(value.toString())){
 				
-
+/*							System.out.println("key " + key+ " is inconsitent ");
+							System.out.println("Current time point is"+ currentpoint);
+							System.out.println("Value "+ value);
+							System.out.println(" prev value " +  tfdMap.get(key.toString()));*/
 							isConsistant = false;
 							isCons = false;
 
@@ -267,6 +274,25 @@ public class Table {
 				iterdeltakeys = tFDHash.keys();
 			}
 		}
+/*		//Printing the number of conflicts:
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter("Conflicts.csv"));
+			iterdeltakeys = tFDHash.keys();
+			while(iterdeltakeys.hasMoreElements()){
+				String key = iterdeltakeys.nextElement();
+				ArrayList<Integer> vals  = tFDHash.get(key);
+				for(int i=0; i<vals.size(); i++){
+					bw.write(table.get(vals.get(i)).getStringTuple());
+					bw.write("\n");
+				}
+			}
+			bw.flush();
+			bw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+		
 		
 			Collection<ArrayList<Integer>> sets = tFDHash.values();
 			Iterator<ArrayList<Integer>> iter = sets.iterator();
@@ -325,6 +351,7 @@ public class Table {
 	        iter2 = delta.iterator();
 	        while(iter2.hasNext()){
 	        	Tuple tup = table.get(iter2.next());
+	        	//System.out.println("sp:" + tup.getStartPoint() + " ep: "+ tup.getEndPoint());
 	        	TreeSet<Integer> tupsubset = (TreeSet<Integer>) ts.subSet(tup.getStartPoint(), true, tup.getEndPoint(), true);
                 Iterator<Integer> itersub = tupsubset.iterator();
                 String[] dataattr = tup.getDataAttrs();
@@ -523,7 +550,7 @@ public class Table {
 		}
 		
 	}
-	private Table factorize2(Table input){
+	public Table factorize2(Table input){   //naive normalization
 /*		System.out.println("---------------------------------");
 		for(int i = 0; i<input.Cardinality(); i++){
 			System.out.println(input.getTuple(i).getStringTuple());
@@ -579,8 +606,7 @@ public class Table {
        
         //looping through the tuples
         Table repair = new Table();
-        
-        
+       
         HashMap<String, String> tFDsKeyVal = null;
         for(int t=0; t<tbl.Cardinality(); t++){
         	Tuple tup = tbl.getTuple(t);
@@ -616,6 +642,7 @@ public class Table {
         			
 					if(!tFDsKeyVal.get(key.toString()).equals(value)){
 						isCons = false;
+						//System.out.println("key = "+ key.toString() + " and the start point = " + tup.getStartPoint());
 					}
         		}
         		else{
@@ -637,7 +664,115 @@ public class Table {
 	public Tuple Remove(int pos){
 		return table.remove(pos);
 	}
-	
+	public int CountConflicts(ArrayList<tFD> tFDs){
+		int num = 0;
+		ArrayList<int[]> lhstFDs = new ArrayList<int[]>(tFDs.size());
+		for(int i=0; i<tFDs.size(); i++){
+			lhstFDs.add(tFDs.get(i).getlhs());
+		}
+		for(int t = 0; t< table.size(); t++){
+			Tuple tup = table.get(t);
+			for(int d=0; d<tFDs.size(); d++){
+				int[] tFD = lhstFDs.get(d);
+				int[] rhs = tFDs.get(d).getrhs();
+				StringBuilder key = new StringBuilder();
+				for(int k=0; k<tFD.length; k++){
+					key.append(tup.getDataAttr(tFD[k]-1));
+				}
+				String keyStr = key.toString();
+				StringBuilder value = new StringBuilder();
+				for(int k=0; k<rhs.length; k++){
+					value.append(tup.getDataAttr(rhs[k]-1));
+				}
+				String valuestr = value.toString();
+				for( int t2 = t+1; t2 < table.size(); t2++){
+					Tuple tupc = table.get(t2);
+					key = new StringBuilder();
+					for(int k=0; k<tFD.length; k++){
+						key.append(tupc.getDataAttr(tFD[k]-1));
+					}
+					String candid = key.toString();
+					if(keyStr.equals(candid)){
+						value = new StringBuilder();
+						for(int k=0; k<rhs.length; k++){
+							value.append(tupc.getDataAttr(rhs[k]-1));
+						}
+						if(!valuestr.equals(value.toString())){
+							if(tup.getStartPoint() <= tupc.getStartPoint() && tupc.getStartPoint() < tup.getEndPoint()){
+								num++;
+							}
+							else if(tupc.getStartPoint() <= tup.getStartPoint() && tup.getStartPoint() < tupc.getEndPoint()){
+								num++;
+							}
+							
+						}
+					}
+				}
+			}
+		}
+
+		
+
+		return num;
+	}
+	public int countTuplesInConflict(ArrayList<tFD> tFDs){
+		int num = 0;
+		ArrayList<int[]> lhstFDs = new ArrayList<int[]>(tFDs.size());
+		for(int i=0; i<tFDs.size(); i++){
+			lhstFDs.add(tFDs.get(i).getlhs());
+		}
+		HashSet<Integer> tuplenum = new HashSet<Integer>();
+		for(int t = 0; t< table.size(); t++){
+			Tuple tup = table.get(t);
+			for(int d=0; d<tFDs.size(); d++){
+				int[] tFD = lhstFDs.get(d);
+				int[] rhs = tFDs.get(d).getrhs();
+				StringBuilder key = new StringBuilder();
+				for(int k=0; k<tFD.length; k++){
+					key.append(tup.getDataAttr(tFD[k]-1));
+				}
+				String keyStr = key.toString();
+				StringBuilder value = new StringBuilder();
+				for(int k=0; k<rhs.length; k++){
+					value.append(tup.getDataAttr(rhs[k]-1));
+				}
+				String valuestr = value.toString();
+				for( int t2 = t+1; t2 < table.size(); t2++){
+					Tuple tupc = table.get(t2);
+					key = new StringBuilder();
+					for(int k=0; k<tFD.length; k++){
+						key.append(tupc.getDataAttr(tFD[k]-1));
+					}
+					String candid = key.toString();
+					if(keyStr.equals(candid)){
+						value = new StringBuilder();
+						for(int k=0; k<rhs.length; k++){
+							value.append(tupc.getDataAttr(rhs[k]-1));
+						}
+						if(!valuestr.equals(value.toString())){
+							if(tup.getStartPoint() <= tupc.getStartPoint() && tupc.getStartPoint() < tup.getEndPoint()){
+								//num++;
+								//System.out.println(table.get(t).getStringTuple());
+								//System.out.println(table.get(t2).getStringTuple());
+								tuplenum.add(t);
+								tuplenum.add(t2);
+							}
+							else if(tupc.getStartPoint() <= tup.getStartPoint() && tup.getStartPoint() < tupc.getEndPoint()){
+								//num++;
+								//System.out.println(table.get(t).getStringTuple());
+								//System.out.println(table.get(t2).getStringTuple());
+								tuplenum.add(t);
+								tuplenum.add(t2);
+							}
+							
+						}
+					}
+				}
+			}
+		}
+		
+		return tuplenum.size();
+	}
 	
 
 }
