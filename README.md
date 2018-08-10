@@ -22,3 +22,7 @@ If the first line of your csv file is the name of the attributes uncomment the l
 <br>
 //bf.readLine();  //skipping the header
 
+<br>
+
+If you run PntRCon, then there is no need for normalization.<br>
+For the IntRCon, use either naive normalization or smart normalization (you need to just uncomment either of them). <br>
