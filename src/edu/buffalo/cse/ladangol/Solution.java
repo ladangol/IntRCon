@@ -13,10 +13,10 @@ public class Solution {
 
 	public static void main(String[] args) {
 		
-		for(int r = 0; r < 20; r++){
+		//for(int r = 0; r < 20; r++){
 			Table table = new Table();
 			ArrayList<tFD> tFDs = new ArrayList<>();
-			String filename = "Preschunk5k";
+			String filename = "table4";
 		
 			try {
 				FileReader fr = new FileReader("Data/"+filename+".csv");
@@ -24,7 +24,7 @@ public class Solution {
 				String line;
 				//If you need to skip the header
 				//
-				bf.readLine();  //skipping the header
+				//bf.readLine();  //skipping the header
 				///////////////
 				///////
 				///////////////
@@ -47,7 +47,7 @@ public class Solution {
 			
 			try {
 				
-				FileReader fr = new FileReader("Data/tFDPresc");
+				FileReader fr = new FileReader("Data/tFD2");
 				BufferedReader bf = new BufferedReader(fr);
 				String line;
 				while((line =bf.readLine())!= null){
@@ -71,42 +71,54 @@ public class Solution {
 			
 			
 			
-			System.out.println(table.Cardinality());
-			long startTime = System.nanoTime();
+			//System.out.println(table.Cardinality());
+		//	long startTime = System.nanoTime();
 			table.reduce();
-		   // table = table.Factorize(tFDs);
-			//table = table.factorize2(table);
-		    
+			
+			//If you are running IntRCon: run one of the normalization algorithms
+		 //   table = table.Normalize(tFDs);     //This is smarter normalization
+			//table = table.NaiNormalize(table);   // This is naive Normalization
+		     
 			//System.out.println("after fact: " + table.Cardinality());
 			//long startTime = System.nanoTime();
 			
-		   // table.PntRCon(tFDs);
+			//Point-based Repair Construction
+		    table.PntRCon(tFDs);
 		     
-		   
+		   //Interval-based Repair Construction
 		 	//table = table.IntRCon(tFDs);
-		    // table.coalesce();
+			
+		     table.coalesce();
 			
 		//	 
 		  //  System.out.println(table.Cardinality());
-			System.out.println("Number of conflicts is " + table.CountConflicts(tFDs));
-			System.out.println("Number of Tuples in Conflict is " + table.countTuplesInConflict(tFDs));
+			
+			//If you wanna see number of conflicts run the following lines:
+		//	System.out.println("Number of conflicts is " + table.CountConflicts(tFDs));
+	//		System.out.println("Number of Tuples in Conflict is " + table.countTuplesInConflict(tFDs));
 																																																																					
 		 //  table.expand();
-		     long stopTime = System.nanoTime();
+		 //    long stopTime = System.nanoTime();
 			
 	
-			long elapsedtime = stopTime-startTime;
-	    	System.out.println("Time passed = "+ (TimeUnit.MILLISECONDS.convert(elapsedtime, TimeUnit.NANOSECONDS)));
+		//	long elapsedtime = stopTime-startTime;
+	    //	System.out.println("Time passed = "+ (TimeUnit.MILLISECONDS.convert(elapsedtime, TimeUnit.NANOSECONDS)));
 			// TODO Auto-generated method stub
-			try {
+		/*	try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			}*/
+			
+			//If you want to print the repair in the console uncomment the following loop
+			
+			for(int i = 0; i<table.Cardinality(); i++){
+				System.out.println(table.getTuple(i).getStringTuple());
 			}
-//			for(int i = 0; i<table.Cardinality(); i++){
-//				System.out.println(table.getTuple(i).getStringTuple());
-//			}
+			
+			//If you want to write the repair to a file, uncomment the following block: 
+			
 			/*try{
 				BufferedWriter bw = new BufferedWriter(new FileWriter("Data2/repairs/RepairOf"+filename+".csv"));
 			     
@@ -124,7 +136,7 @@ public class Solution {
 			catch (Exception e) {
 				// TODO: handle exception
 			}*/
-		}// end of for (r = 0)
+	//	}// end of for (r = 0)
 
 
 	}

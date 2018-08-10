@@ -217,7 +217,7 @@ public class Table {
 			sb.append(str).append(delimiter);
 		return sb.substring(0, sb.length() - 1);
 	}
-	public Table Factorize(ArrayList<tFD> tFDs){
+	public Table Normalize(ArrayList<tFD> tFDs){
 		ArrayList<int[]> lhstFDs = new ArrayList<int[]>(tFDs.size());
 		for(int i=0; i<tFDs.size(); i++){
 			lhstFDs.add(tFDs.get(i).getlhs());
@@ -377,13 +377,13 @@ public class Table {
 		//Building a set that contains all the subset of the facts that are in conflict.
 		ArrayList<HashSet<Integer>> conflictsets = new ArrayList<HashSet<Integer>>();
 		//ArrayList<HashSet<Integer>> conflictsetsTemp = new ArrayList<HashSet<Integer>>();
-		//I am assuming my original instance is already factorized
+		//I am assuming my original instance is already normalized
 		ArrayList<int[]> lhstFDs = new ArrayList<int[]>(tFDs.size());
 		for(int i=0; i<tFDs.size(); i++){
 			lhstFDs.add(tFDs.get(i).getlhs());
 		}
 		//In the TFDS i do not consider start points and end point but I have to consider them
-		//as well since the instance is factorized, each set in the conflict set has the same interval
+		//as well since the instance is normalized, each set in the conflict set has the same interval
 		//In order to build the sets I need to check if two tuples have the same X R(X,Y') \wedge
 		//R(X,Y) --> Y = Y'
 		Hashtable<String, ArrayList<Integer>> deltas = new Hashtable<String, ArrayList<Integer>>();
@@ -530,7 +530,7 @@ public class Table {
 			  }
 			  Tuple newtup = new Tuple(tup.getDataAttrs(), news, newe);
 			  tableA.add(newtup);
-			  Table normalized = factorize2(tableA);
+			  Table normalized = NaiNormalize(tableA);
 			  tableA = findRepair(normalized, newtup, tFDs);
 			 
 			  
@@ -550,7 +550,7 @@ public class Table {
 		}
 		
 	}
-	public Table factorize2(Table input){   //naive normalization
+	public Table NaiNormalize(Table input){   //naive normalization
 /*		System.out.println("---------------------------------");
 		for(int i = 0; i<input.Cardinality(); i++){
 			System.out.println(input.getTuple(i).getStringTuple());
